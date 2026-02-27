@@ -1,0 +1,12 @@
+# Generated code (output lives in gen-go, not here)
+*.pb.go
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
