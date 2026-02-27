@@ -1,0 +1,17 @@
+{
+    "name": "orchestra-mcp/proto",
+    "description": "Protobuf contract definitions for the Orchestra MCP plugin host protocol.",
+    "type": "proto",
+    "license": "MIT",
+    "homepage": "https://orchestra-mcp.dev",
+    "support": {
+        "issues": "https://github.com/orchestra-mcp/proto/issues",
+        "source": "https://github.com/orchestra-mcp/proto"
+    },
+    "require": {},
+    "extra": {
+        "branch-alias": {
+            "dev-master": "0.1.x-dev"
+        }
+    }
+}
