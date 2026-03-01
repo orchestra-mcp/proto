@@ -36,6 +36,13 @@ message PluginRequest {
     StorageWriteRequest storage_write = 31;
     StorageDeleteRequest storage_delete = 32;
     StorageListRequest storage_list = 33;
+    // Streaming
+    StreamStart stream_start = 40;
+    StreamCancel stream_cancel = 41;
+    // Events
+    Subscribe subscribe = 50;
+    Unsubscribe unsubscribe = 51;
+    Publish publish = 52;
   }
 }
 
@@ -58,6 +65,11 @@ message PluginResponse {
     StorageWriteResponse storage_write = 31;
     StorageDeleteResponse storage_delete = 32;
     StorageListResponse storage_list = 33;
+    // Streaming
+    StreamChunk stream_chunk = 40;
+    StreamEnd stream_end = 41;
+    // Events
+    EventDelivery event_delivery = 50;
   }
 }
 
@@ -135,6 +147,7 @@ message ToolRequest {
   google.protobuf.Struct arguments = 2;
   string caller_plugin = 3;
   string trace_parent = 4;
+  string provider = 5;           // AI provider for routing (e.g., "claude", "openai", "gemini", "ollama")
 }
 
 message ToolResponse {
@@ -251,4 +264,72 @@ message StorageEntry {
   int64 size = 2;
   int64 version = 3;
   google.protobuf.Timestamp modified_at = 4;
+}
+
+// ================================================================
+// Streaming
+//
+// Streaming tools keep the QUIC stream open for multiple responses.
+// Flow: Client sends StreamStart → Server sends N StreamChunks → StreamEnd
+// Client can send StreamCancel at any point to abort.
+// ================================================================
+
+message StreamStart {
+  string stream_id = 1;                    // UUIDv7 — correlates all chunks
+  string tool_name = 2;                    // Tool to invoke in streaming mode
+  google.protobuf.Struct arguments = 3;    // Tool arguments
+  string caller_plugin = 4;               // Source plugin ID
+}
+
+message StreamCancel {
+  string stream_id = 1;
+}
+
+message StreamChunk {
+  string stream_id = 1;
+  bytes data = 2;                          // Chunk payload (text, JSON, binary)
+  string content_type = 3;                 // "text/plain", "application/json", etc.
+  int64 sequence = 4;                      // 0-based chunk index
+}
+
+message StreamEnd {
+  string stream_id = 1;
+  bool success = 2;
+  string error_code = 3;
+  string error_message = 4;
+  int64 total_chunks = 5;                  // Total chunks sent
+}
+
+// ================================================================
+// Events (Pub/Sub)
+//
+// Plugins can subscribe to event topics and publish events.
+// The orchestrator routes events from publishers to subscribers
+// using fan-out (one publish → N deliveries).
+// ================================================================
+
+message Subscribe {
+  string subscription_id = 1;             // UUIDv7 — unique per subscription
+  string topic = 2;                        // "feature.updated", "build.completed", etc.
+  map<string, string> filters = 3;         // Optional key=value filters on payload
+}
+
+message Unsubscribe {
+  string subscription_id = 1;
+}
+
+message Publish {
+  string topic = 1;                        // Event topic
+  string event_type = 2;                   // Specific event type within topic
+  google.protobuf.Struct payload = 3;      // Event data
+  string source_plugin = 4;               // Publisher plugin ID
+}
+
+message EventDelivery {
+  string subscription_id = 1;             // Which subscription matched
+  string topic = 2;
+  string event_type = 3;
+  google.protobuf.Struct payload = 4;
+  string source_plugin = 5;               // Who published
+  google.protobuf.Timestamp timestamp = 6;
 }
