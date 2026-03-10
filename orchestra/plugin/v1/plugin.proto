@@ -148,6 +148,7 @@ message ToolRequest {
   string caller_plugin = 3;
   string trace_parent = 4;
   string provider = 5;           // AI provider for routing (e.g., "claude", "openai", "gemini", "ollama")
+  string session_id = 6;         // MCP session ID (auto-injected by transport for feature locking)
 }
 
 message ToolResponse {
